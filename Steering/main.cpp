@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <mutex>
+#include <math.h>
 
 
 using namespace std;
@@ -37,6 +38,7 @@ void steering_angle(double _sigma, double *alpha_deg){
     //Variable Declaration
     double sigma = _sigma; // streering angle in deg
     double theta = 0; // steering angle in rad
+    double r; // steering radius
 
     theta = 0.017453292519943295 * sigma; // theta = deg2rad(sigma)
 
@@ -79,13 +81,16 @@ int main(int argc, char* argv[]) {
     float current_sigma = 0;
 
     // Behaviour variables
-    float vtan_command_old = 0
+    float vtan_command_old = 0;
     float sigma_command_old = 0;
 
     while(1) {
         // Behaviour control
         vtan_desired = vtan_command;
         sigma_desired = sigma_command;
+
+        vtan_command_old = vtan_command;
+        sigma_command_old = sigma_command;
 
         // Acceleration control
         if(current_vtan < vtan_desired-0.05) {
@@ -104,10 +109,10 @@ int main(int argc, char* argv[]) {
 
 
         // Publish wheel and Dynamixel commands
-        std::string msg = wheels_w[0] + " " + wheels_w[1] + " " + wheels_w[2] + " " + wheels_w[3] + " " + wheels_w[4] + " " + wheels_w[5];
+        std::string msg = to_string(wheels_w[0]) + " " + to_string(wheels_w[1]) + " " + to_string(wheels_w[2]) + " " + to_string(wheels_w[3]) + " " + to_string(wheels_w[4]) + " " + to_string(wheels_w[5]);
         mosquitto_publish(mqtt_client, 0, "mobility/motorsspeed", msg.length(), msg.c_str(), 0, 0);
 
-        msg = dynamixel_angle[0] + " " + dynamixel_angle[1] + " " + dynamixel_angle[2] + " " + dynamixel_angle[3];
+        msg = to_string(dynamixel_angle[0]) + " " + to_string(dynamixel_angle[1]) + " " + to_string(dynamixel_angle[2]) + " " + to_string(dynamixel_angle[3]);
         mosquitto_publish(mqtt_client, 0, "mobility/dynamixel", msg.length(), msg.c_str(), 0, 0);
 
 
