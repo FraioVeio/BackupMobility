@@ -100,7 +100,7 @@ int main(int argc,char* argv[]) {
             old_error[y] = error[y];
 
             pid[y] = p[y]+i[y]+d[y];
-            cout << fdb[y] << endl;
+            //cout << fdb[y] << endl;
 
             if(pid[y] > 0.2) {
                 pid[y] = 0.2;
