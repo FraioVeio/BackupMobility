@@ -9,6 +9,7 @@
 #include <mutex>
 #include <math.h>
 
+#define ACCELERATION_TOLL 0.1
 
 using namespace std;
 
@@ -56,7 +57,7 @@ void steering_angle(double _sigma, double *alpha_deg){
 }
 
 void wheels_speed(double _vtan, double _sigma, double *_w) {
-    const double wcent = 50; // distanza coppia ruote centrali
+    const double wcent = 70; // distanza coppia ruote centrali
     const double wext = 50; // distanza coppia ruote davanti e dietro
     const double wdist = 60; // distanza ruote stesso lato
 
@@ -110,12 +111,14 @@ int main(int argc, char* argv[]) {
     float sigma_command_old = 0;
     bool critico = false;
     bool critico_old = false;
+    int stopandgostatus = 0;
+    int stopandgocyclecount = 0;
+
+
 
     while(1) {
         // Behaviour control
-        vtan_desired = vtan_command;
-        sigma_desired = sigma_command;
-
+        bool default = true;
         if(sigma_command != sigma_command_old) {    // Se c'è stato un cambio di angolo
             if(sigma_command < 45-5) {
                 critico = false;
@@ -130,19 +133,54 @@ int main(int argc, char* argv[]) {
                 // Velocità a zero e angolo lascia costante
                 // DOPO essersi fermati allora cambia l'angolo a quello desiderato
                 // Velocità a Velocità desiderata
+
+                stopandgostatus = 1;
             }
         }
+
+        if(stopandgostatus > 0) {
+            default = false;
+            if(stopandgostatus == 1) {  // Fermati
+                vtan_desired = 0;
+                if(current_vtan > -ACCELERATION_TOLL && current_vtan < ACCELERATION_TOLL) { // Quando si è fermato
+                    stopandgostatus = 2;
+                    stopandgocyclecount = 0;
+                }
+            }
+
+            if(stopandgostatus = 2) {   // DOPO essersi fermati allora cambia l'angolo a quello desiderato e aspetta
+                sigma_desired = sigma_command;
+
+                if(stopandgocyclecount >= 4 * 10) { // aspetta 4 secondi
+                    stopandgostatus = 3;
+                }
+
+                stopandgocyclecount ++;
+            }
+
+            if(stopandgostatus = 3) {   // Velocità a Velocità desiderata
+                vtan_desired = vtan_command;
+                stopandgostatus = 0;    // esci da stopandgo
+            }
+        }
+
+        if(default) {
+            vtan_desired = vtan_command;
+            sigma_desired = sigma_command;
+        }
+
+        /***********************/
 
         vtan_command_old = vtan_command;
         sigma_command_old = sigma_command;
         critico_old = critico;
 
         // Acceleration control
-        if(current_vtan < vtan_desired-0.05) {
+        if(current_vtan < vtan_desired-ACCELERATION_TOLL) {
             current_vtan += acceleration * 0.1;
         }
 
-        if(current_vtan > vtan_desired+0.05) {
+        if(current_vtan > vtan_desired+ACCELERATION_TOLL) {
             current_vtan -= acceleration * 0.1;
         }
 
