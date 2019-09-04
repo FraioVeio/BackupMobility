@@ -19,3 +19,7 @@ run:
 runwheel:
 	@echo "\n\033[1;32m█ Running...\033[0m\n\n" &&\
 	./build/WheelController/WheelController
+
+runsteering:
+	@echo "\n\033[1;32m█ Running...\033[0m\n\n" &&\
+	./build/Steering/Steering
