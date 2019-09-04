@@ -45,10 +45,11 @@ void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
         char *msg = (char*) message->payload;
         sscanf(msg, "%f", &fdb[index]);
         //cout << index << " " << fdb[index] << endl;
-    } else {
+    }
+
+    if(strcmp((char*)message->topic, "mobility/motorsspeed") == 0) {
         char *msg = (char*) message->payload;
-        sscanf(msg, "%f", &desired[0]);
-        desired[5] = desired[4] = desired[3] = desired[2] = desired[1] = desired[0];
+        sscanf(msg, "%f %f %f %f %f %f", &desired[0], &desired[1], &desired[2], &desired[3], &desired[4], &desired[5]);
     }
 
     return;
@@ -58,7 +59,7 @@ void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
 void on_connect_callback(struct mosquitto *mosq, void *userdata, int rc) {
     char topic1[] = "mobility/feedback/vesc/#";
     mosquitto_subscribe(mosq, NULL, topic1, 1);
-    char topic2[] = "mobility/test"; //defines topic, # is the wildcard topic, and gets datas from all topics except for "$" starting topic
+    char topic2[] = "mobility/motorsspeed"; //defines topic, # is the wildcard topic, and gets datas from all topics except for "$" starting topic
     mosquitto_subscribe(mosq, NULL, topic2, 1); //Subscribe to a topic.
     return;
 }
@@ -99,7 +100,7 @@ int main(int argc,char* argv[]) {
             old_error[y] = error[y];
 
             pid[y] = p[y]+i[y]+d[y];
-            cout << fdb[y] << endl;
+            //cout << fdb[y] << endl;
 
             if(pid[y] > 0.2) {
                 pid[y] = 0.2;
@@ -114,7 +115,7 @@ int main(int argc,char* argv[]) {
         + " " + to_string(pid[5]);
         mosquitto_publish(mqtt_client, 0, "mobility/VESC/duty", msg.length(), msg.c_str(), 0, 0);
 
-        cout << msg << endl;
+        // cout << msg << endl;
 
         usleep(100000);
     }
