@@ -56,13 +56,13 @@ void steering_angle(double _sigma, double *alpha_deg){
 }
 
 void wheels_speed(double _vtan, double _sigma, double *_w) {
-    const duble wcent = 50; // distanza coppia ruote centrali
+    const double wcent = 50; // distanza coppia ruote centrali
     const double wext = 50; // distanza coppia ruote davanti e dietro
     const double wdist = 60; // distanza ruote stesso lato
 
     double r; // steering radius
     //curvature radius computation
-    if (theta == 0.0) {
+    if (_sigma == 0.0) {
       r = 5.0E+8; //set to Inf
     } else {
       r = 250.0 / sin(theta); //250 is a geometry driven parameter
@@ -78,10 +78,10 @@ void wheels_speed(double _vtan, double _sigma, double *_w) {
     radius[5] = sqrt((r-wext/2)*(r-wext/2) + wdist*wdist);
     double radiusvtan = sqrt(r*r + wdist*wdist);
 
+    // Wheels speed
     for(int i=0;i<6;i++) {
         w[i] = _vtan * radius[i] / radiusvtan;
     }
-
 }
 
 int main(int argc, char* argv[]) {
@@ -108,14 +108,34 @@ int main(int argc, char* argv[]) {
     // Behaviour variables
     float vtan_command_old = 0;
     float sigma_command_old = 0;
+    bool critico = false;
+    bool critico_old = false;
 
     while(1) {
         // Behaviour control
         vtan_desired = vtan_command;
         sigma_desired = sigma_command;
 
+        if(sigma_command != sigma_command_old) {    // Se c'è stato un cambio di angolo
+            if(sigma_command < 45-5) {
+                critico = false;
+            }
+            if(sigma_command > 45+5) {
+                critico = true;
+            }
+
+            if(critico != critico_old) {
+                // IMPOSTA LA FLAG CHE FA QUESTO:
+
+                // Velocità a zero e angolo lascia costante
+                // DOPO essersi fermati allora cambia l'angolo a quello desiderato
+                // Velocità a Velocità desiderata
+            }
+        }
+
         vtan_command_old = vtan_command;
         sigma_command_old = sigma_command;
+        critico_old = critico;
 
         // Acceleration control
         if(current_vtan < vtan_desired-0.05) {
