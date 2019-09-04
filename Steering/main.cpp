@@ -113,8 +113,6 @@ int main(int argc, char* argv[]) {
     // Behaviour variables
     float vtan_command_old = 0;
     float sigma_command_old = 0;
-    bool critico = false;
-    bool critico_old = false;
     int stopandgostatus = 0;
     int stopandgocyclecount = 0;
 
@@ -124,14 +122,10 @@ int main(int argc, char* argv[]) {
         // Behaviour control
         bool defaultbehaviour = true;
         if(sigma_command != sigma_command_old) {    // Se c'è stato un cambio di angolo
-            if(sigma_command < 45+2) {
-                critico = false;
-            }
-            if(sigma_command > 45-2) {
-                critico = true;
-            }
+            if(sigma_command == 45)
+                sigma_command = 44.9;
 
-            if(critico != critico_old) {
+            if((sigma_command_old < 45 && sigma_command > 45) || (sigma_command_old > 45 && sigma_command < 45)) {
                 // IMPOSTA LA FLAG CHE FA QUESTO:
 
                 // Velocità a zero e angolo lascia costante
@@ -175,11 +169,10 @@ int main(int argc, char* argv[]) {
 
         vtan_command_old = vtan_command;
         sigma_command_old = sigma_command;
-        critico_old = critico;
 
         /***********************/
 
-        cout << current_vtan << " " << current_sigma << endl;
+        // cout << current_vtan << " " << current_sigma << endl;
 
         // Acceleration control
         if(current_vtan < vtan_desired-ACCELERATION_TOLL) {
