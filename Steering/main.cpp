@@ -11,7 +11,8 @@
 
 using namespace std;
 
-float vtan_desired, sigma_desired;
+float vtan_command = 0, sigma_command = 0;
+float vtan_desired = 0, sigma_desired = 0;
 
 float acceleration = 1;
 
@@ -22,7 +23,7 @@ void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
     cout << message->topic << " -> " << (char*) message->payload << std::endl;
 
     char *msg = (char*) message->payload;
-    sscanf(msg, "%f %f", &vtan_desired, &sigma_desired);
+    sscanf(msg, "%f %f", &vtan_command, &sigma_command);
 
     return;
 }
@@ -55,6 +56,10 @@ int main(int argc, char* argv[]) {
     float current_sigma = 0;
 
     while(1) {
+        // Behaviour control
+        vtan_desired = vtan_command;
+        sigma_desired = sigma_command;
+
         // Acceleration control
         if(current_speed < vtan_desired-0.05) {
             current_speed += acceleration * 0.1;
