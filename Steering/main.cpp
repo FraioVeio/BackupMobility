@@ -56,6 +56,31 @@ void steering_angle(double _sigma, double *alpha_deg){
 }
 
 void wheels_speed(double _vtan, double _sigma, double *_w) {
+    const duble wcent = 50; // distanza coppia ruote centrali
+    const double wext = 50; // distanza coppia ruote davanti e dietro
+    const double wdist = 60; // distanza ruote stesso lato
+
+    double r; // steering radius
+    //curvature radius computation
+    if (theta == 0.0) {
+      r = 5.0E+8; //set to Inf
+    } else {
+      r = 250.0 / sin(theta); //250 is a geometry driven parameter
+    }
+
+    // Wheel radius
+    double radius[6];
+    radius[2] = r + wcent/2;
+    radius[3] = r - wcent/2;
+    radius[0] = sqrt((r+wext/2)*(r+wext/2) + wdist*wdist);
+    radius[1] = sqrt((r-wext/2)*(r-wext/2) + wdist*wdist);
+    radius[4] = sqrt((r+wext/2)*(r+wext/2) + wdist*wdist);
+    radius[5] = sqrt((r-wext/2)*(r-wext/2) + wdist*wdist);
+    double radiusvtan = sqrt(r*r + wdist*wdist);
+
+    for(int i=0;i<6;i++) {
+        w[i] = _vtan * radius[i] / radiusvtan;
+    }
 
 }
 
