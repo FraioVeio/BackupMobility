@@ -16,7 +16,7 @@
 using namespace std;
 
 float fdb[6] = {0, 0, 0, 0, 0, 0};
-float desired[6] = {0, 400, 0, 0, 0, 0};
+float desired[6] = {0, 0, 0, 0, 0, 0};
 
 void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message) {
     //cout << message->topic << " -> " << (char*) message->payload << std::endl;
@@ -45,6 +45,10 @@ void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
         char *msg = (char*) message->payload;
         sscanf(msg, "%f", &fdb[index]);
         //cout << index << " " << fdb[index] << endl;
+    } else {
+        char *msg = (char*) message->payload;
+        sscanf(msg, "%f", &desired[0]);
+        desired[5] = desired[4] = desired[3] = desired[2] = desired[1] = desired[0];
     }
 
     return;
@@ -52,8 +56,10 @@ void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
 
 
 void on_connect_callback(struct mosquitto *mosq, void *userdata, int rc) {
-    char topic[] = "mobility/feedback/vesc/#"; //defines topic, # is the wildcard topic, and gets datas from all topics except for "$" starting topic
-    mosquitto_subscribe(mosq, NULL, topic, 1); //Subscribe to a topic.
+    char topic1[] = "mobility/feedback/vesc/#";
+    mosquitto_subscribe(mosq, NULL, topic1, 1);
+    char topic2[] = "mobility/test"; //defines topic, # is the wildcard topic, and gets datas from all topics except for "$" starting topic
+    mosquitto_subscribe(mosq, NULL, topic2, 1); //Subscribe to a topic.
     return;
 }
 
@@ -95,19 +101,17 @@ int main(int argc,char* argv[]) {
             pid[y] = p[y]+i[y]+d[y];
             cout << fdb[y] << endl;
 
-            if(pid[y] > 0.1) {
-                pid[y] = 0.1;
+            if(pid[y] > 0.2) {
+                pid[y] = 0.2;
             }
-            if(pid[y] < -0.1) {
-                pid[y] = -0.1;
+            if(pid[y] < -0.2) {
+                pid[y] = -0.2;
             }
         }
 
         std::string msg = to_string(pid[0]) + " " + to_string(pid[1]) + " " +
         to_string(pid[2]) + " " + to_string(pid[3]) + " " + to_string(pid[4])
         + " " + to_string(pid[5]);
-
-        msg = "0 " + to_string(pid[1]) + " 0 0 0 0";
         mosquitto_publish(mqtt_client, 0, "mobility/VESC/duty", msg.length(), msg.c_str(), 0, 0);
 
         cout << msg << endl;
