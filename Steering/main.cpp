@@ -55,6 +55,10 @@ int main(int argc, char* argv[]) {
     float current_speed = 0;
     float current_sigma = 0;
 
+    // Behaviour variables
+    float vtan_command_old = 0
+    float sigma_command_old = 0;
+
     while(1) {
         // Behaviour control
         vtan_desired = vtan_command;
