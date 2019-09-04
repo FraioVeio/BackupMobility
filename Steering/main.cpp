@@ -16,9 +16,6 @@ float vtan_desired = 0, sigma_desired = 0;
 
 float acceleration = 1;
 
-// Cancellami appena meloni pusha la funzione completa
-void steering_angle (double _sigma, double* alpha_wheels);
-
 void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message) {
     cout << message->topic << " -> " << (char*) message->payload << std::endl;
 
@@ -35,7 +32,7 @@ void on_connect_callback(struct mosquitto *mosq, void *userdata, int rc) {
     return;
 }
 
-void steering_angle (double _sigma, double* alpha_deg){
+void steering_angle(double _sigma, double *alpha_deg){
 
     //Variable Declaration
     double sigma = _sigma; // streering angle in deg
@@ -54,8 +51,10 @@ void steering_angle (double _sigma, double* alpha_deg){
     alpha_deg[1] = atan(-512.0 / (r * cos(theta) - 250.0)) * 57.295779513082323;
     alpha_deg[4] = atan(612.0 / (r * cos(theta) + 250.0)) * 57.295779513082323;
     alpha_deg[5] = atan(612.0 / (r * cos(theta) - 250.0)) * 57.295779513082323;
+}
 
-
+void wheels_speed(double _vtan, double _sigma, double *_w) {
+    
 }
 
 int main(int argc, char* argv[]) {
