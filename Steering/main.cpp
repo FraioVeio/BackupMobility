@@ -35,6 +35,29 @@ void on_connect_callback(struct mosquitto *mosq, void *userdata, int rc) {
     return;
 }
 
+void steering_angle (double _sigma, double* alpha_deg){
+
+    //Variable Declaration
+    double sigma = _sigma; // streering angle in deg
+    double theta = 0; // steering angle in rad
+
+    theta = 0.017453292519943295 * sigma; // theta = deg2rad(sigma)
+
+    //curvature radius computation
+    if (theta == 0.0) {
+      r = 5.0E+8; //set to Inf
+    } else {
+      r = 250.0 / sin(theta); //250 is a geometry driven parameter
+    }
+
+    alpha_deg[0] = atan(-512.0 / (r * cos(theta) + 250.0)) * 57.295779513082323;
+    alpha_deg[1] = atan(-512.0 / (r * cos(theta) - 250.0)) * 57.295779513082323;
+    alpha_deg[4] = atan(612.0 / (r * cos(theta) + 250.0)) * 57.295779513082323;
+    alpha_deg[5] = atan(612.0 / (r * cos(theta) - 250.0)) * 57.295779513082323;
+
+
+}
+
 int main(int argc, char* argv[]) {
     /* VARIABLES DECLARATION*/
     bool running = true;
@@ -43,6 +66,7 @@ int main(int argc, char* argv[]) {
     char mosquitto_broker_address[] = "10.0.0.10";
     int mosquitto_broker_port = 1883;
     int mosquitto_timeout_sleep = 60;
+
 
     mosquitto_lib_init(); //Starts mosquitto library
     mqtt_client=mosquitto_new(NULL,running,pacchetto); //create a struct mosquitto* object
