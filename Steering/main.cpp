@@ -66,7 +66,7 @@ void wheels_speed(double _vtan, double _sigma, double *_w) {
     if (_sigma == 0.0) {
       r = 5.0E+8; //set to Inf
     } else {
-      r = 250.0 / sin(theta); //250 is a geometry driven parameter
+      r = 250.0 / sin(_sigma); //250 is a geometry driven parameter
     }
 
     // Wheel radius
@@ -81,7 +81,7 @@ void wheels_speed(double _vtan, double _sigma, double *_w) {
 
     // Wheels speed
     for(int i=0;i<6;i++) {
-        w[i] = _vtan * radius[i] / radiusvtan;
+        _w[i] = _vtan * radius[i] / radiusvtan;
     }
 }
 
@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
 
     while(1) {
         // Behaviour control
-        bool default = true;
+        bool defaultbehaviour = true;
         if(sigma_command != sigma_command_old) {    // Se c'è stato un cambio di angolo
             if(sigma_command < 45-5) {
                 critico = false;
@@ -139,7 +139,7 @@ int main(int argc, char* argv[]) {
         }
 
         if(stopandgostatus > 0) {
-            default = false;
+            defaultbehaviour = false;
             if(stopandgostatus == 1) {  // Fermati
                 vtan_desired = 0;
                 if(current_vtan > -ACCELERATION_TOLL && current_vtan < ACCELERATION_TOLL) { // Quando si è fermato
@@ -164,7 +164,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        if(default) {
+        if(defaultbehaviour) {
             vtan_desired = vtan_command;
             sigma_desired = sigma_command;
         }
