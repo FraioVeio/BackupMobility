@@ -13,6 +13,11 @@ using namespace std;
 
 float vtan_desired, sigma_desired;
 
+float acceleration = 1;
+
+// Cancellami appena meloni pusha la funzione completa
+void steering_angle (double _sigma, double* alpha_wheels);
+
 void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message) {
     cout << message->topic << " -> " << (char*) message->payload << std::endl;
 
@@ -29,8 +34,7 @@ void on_connect_callback(struct mosquitto *mosq, void *userdata, int rc) {
     return;
 }
 
-
-int main(int argc,char* argv[]) {
+int main(int argc, char* argv[]) {
     /* VARIABLES DECLARATION*/
     bool running = true;
     void* pacchetto;
@@ -47,7 +51,23 @@ int main(int argc,char* argv[]) {
     mosquitto_loop_start(mqtt_client); // This function call loop() for you in an infinite blocking loop.  It is useful for the case where you only want to run the MQTT client loop in your program.It handles reconnecting in case server connection is lost.  If you call mosquitto_disconnect() in a callback it will return.
 
 
+    float current_speed = 0;
+    float current_sigma = 0;
+
     while(1) {
+        // Acceleration control
+        if(current_speed < vtan_desired-0.05) {
+            current_speed += acceleration * 0.1;
+        }
+
+        if(current_speed > vtan_desired+0.05) {
+            current_speed -= acceleration * 0.1;
+        }
+
+        // Angle control
+        double dynamixel_desired[6];
+        steering_angle(current_sigma, dynamixel_desired);
+
 
 
         usleep(100000);
