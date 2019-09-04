@@ -10,13 +10,12 @@
 #include <math.h>
 
 #define ACCELERATION_TOLL 0.1
+#define ACCELERATION 50
 
 using namespace std;
 
 float vtan_command = 0, sigma_command = 0;
 float vtan_desired = 0, sigma_desired = 0;
-
-float acceleration = 1;
 
 void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message) {
     cout << message->topic << " -> " << (char*) message->payload << std::endl;
@@ -57,31 +56,37 @@ void steering_angle(double _sigma, double *alpha_deg){
 }
 
 void wheels_speed(double _vtan, double _sigma, double *_w) {
-    const double wcent = 70; // distanza coppia ruote centrali
-    const double wext = 50; // distanza coppia ruote davanti e dietro
-    const double wdist = 60; // distanza ruote stesso lato
+    if(_sigma != 0) {
+        const double wcent = 70; // distanza coppia ruote centrali
+        const double wext = 50; // distanza coppia ruote davanti e dietro
+        const double wdist = 60; // distanza ruote stesso lato
 
-    double r; // steering radius
-    //curvature radius computation
-    if (_sigma == 0.0) {
-      r = 5.0E+8; //set to Inf
+        double r; // steering radius
+        //curvature radius computation
+        if (_sigma == 0.0) {
+          r = 5.0E+8; //set to Inf
+        } else {
+          r = 250.0 / sin(_sigma); //250 is a geometry driven parameter
+        }
+
+        // Wheel radius
+        double radius[6];
+        radius[2] = r + wcent/2;
+        radius[3] = r - wcent/2;
+        radius[0] = sqrt((r+wext/2)*(r+wext/2) + wdist*wdist);
+        radius[1] = sqrt((r-wext/2)*(r-wext/2) + wdist*wdist);
+        radius[4] = sqrt((r+wext/2)*(r+wext/2) + wdist*wdist);
+        radius[5] = sqrt((r-wext/2)*(r-wext/2) + wdist*wdist);
+        double radiusvtan = sqrt(r*r + wdist*wdist);
+
+        // Wheels speed
+        for(int i=0;i<6;i++) {
+            _w[i] = _vtan * radius[i] / radiusvtan; // TODO questo non funge!
+        }
     } else {
-      r = 250.0 / sin(_sigma); //250 is a geometry driven parameter
-    }
-
-    // Wheel radius
-    double radius[6];
-    radius[2] = r + wcent/2;
-    radius[3] = r - wcent/2;
-    radius[0] = sqrt((r+wext/2)*(r+wext/2) + wdist*wdist);
-    radius[1] = sqrt((r-wext/2)*(r-wext/2) + wdist*wdist);
-    radius[4] = sqrt((r+wext/2)*(r+wext/2) + wdist*wdist);
-    radius[5] = sqrt((r-wext/2)*(r-wext/2) + wdist*wdist);
-    double radiusvtan = sqrt(r*r + wdist*wdist);
-
-    // Wheels speed
-    for(int i=0;i<6;i++) {
-        _w[i] = _vtan * radius[i] / radiusvtan;
+        for(int i=0;i<6;i++) {
+            _w[i] = _vtan;
+        }
     }
 }
 
@@ -90,7 +95,7 @@ int main(int argc, char* argv[]) {
     bool running = true;
     void* pacchetto;
     struct mosquitto* mqtt_client = NULL;
-    char mosquitto_broker_address[] = "10.0.0.10";
+    char mosquitto_broker_address[] = "127.0.0.1";
     int mosquitto_broker_port = 1883;
     int mosquitto_timeout_sleep = 60;
 
@@ -120,10 +125,10 @@ int main(int argc, char* argv[]) {
         // Behaviour control
         bool defaultbehaviour = true;
         if(sigma_command != sigma_command_old) {    // Se c'è stato un cambio di angolo
-            if(sigma_command < 45-5) {
+            if(sigma_command < 45-2) {
                 critico = false;
             }
-            if(sigma_command > 45+5) {
+            if(sigma_command > 45+2) {
                 critico = true;
             }
 
@@ -148,7 +153,7 @@ int main(int argc, char* argv[]) {
                 }
             }
 
-            if(stopandgostatus = 2) {   // DOPO essersi fermati allora cambia l'angolo a quello desiderato e aspetta
+            if(stopandgostatus == 2) {   // DOPO essersi fermati allora cambia l'angolo a quello desiderato e aspetta
                 sigma_desired = sigma_command;
 
                 if(stopandgocyclecount >= 4 * 10) { // aspetta 4 secondi
@@ -158,7 +163,7 @@ int main(int argc, char* argv[]) {
                 stopandgocyclecount ++;
             }
 
-            if(stopandgostatus = 3) {   // Velocità a Velocità desiderata
+            if(stopandgostatus == 3) {   // Velocità a Velocità desiderata
                 vtan_desired = vtan_command;
                 stopandgostatus = 0;    // esci da stopandgo
             }
@@ -169,20 +174,24 @@ int main(int argc, char* argv[]) {
             sigma_desired = sigma_command;
         }
 
-        /***********************/
-
         vtan_command_old = vtan_command;
         sigma_command_old = sigma_command;
         critico_old = critico;
 
+        /***********************/
+
+        cout << current_vtan << " " << current_sigma << endl;
+
         // Acceleration control
         if(current_vtan < vtan_desired-ACCELERATION_TOLL) {
-            current_vtan += acceleration * 0.1;
+            current_vtan += ACCELERATION * 0.1;
         }
 
         if(current_vtan > vtan_desired+ACCELERATION_TOLL) {
-            current_vtan -= acceleration * 0.1;
+            current_vtan -= ACCELERATION * 0.1;
         }
+
+        current_sigma = sigma_desired;
 
         // Final commands computation
         double dynamixel_angle[4];
