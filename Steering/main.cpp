@@ -9,20 +9,22 @@
 #include <mutex>
 
 
-
 using namespace std;
 
+float vtan_desired, sigma_desired;
 
 void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message) {
     cout << message->topic << " -> " << (char*) message->payload << std::endl;
 
+    char *msg = (char*) message->payload;
+    sscanf(msg, "%f %f", &vtan_desired, &sigma_desired);
 
     return;
 }
 
 
 void on_connect_callback(struct mosquitto *mosq, void *userdata, int rc) {
-    char topic1[] = "#";
+    char topic1[] = "mobility/move";
     mosquitto_subscribe(mosq, NULL, topic1, 1);
     return;
 }
@@ -46,7 +48,7 @@ int main(int argc,char* argv[]) {
 
 
     while(1) {
-        
+
 
         usleep(100000);
     }
