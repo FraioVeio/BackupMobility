@@ -49,12 +49,12 @@ void steering_angle(double _sigma, double *alpha_deg){
 
     alpha_deg[0] = atan(-512.0 / (r * cos(theta) + 250.0)) * 57.295779513082323;
     alpha_deg[1] = atan(-512.0 / (r * cos(theta) - 250.0)) * 57.295779513082323;
-    alpha_deg[4] = atan(612.0 / (r * cos(theta) + 250.0)) * 57.295779513082323;
-    alpha_deg[5] = atan(612.0 / (r * cos(theta) - 250.0)) * 57.295779513082323;
+    alpha_deg[2] = atan(612.0 / (r * cos(theta) + 250.0)) * 57.295779513082323;
+    alpha_deg[3] = atan(612.0 / (r * cos(theta) - 250.0)) * 57.295779513082323;
 }
 
 void wheels_speed(double _vtan, double _sigma, double *_w) {
-    
+
 }
 
 int main(int argc, char* argv[]) {
@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
     mosquitto_loop_start(mqtt_client); // This function call loop() for you in an infinite blocking loop.  It is useful for the case where you only want to run the MQTT client loop in your program.It handles reconnecting in case server connection is lost.  If you call mosquitto_disconnect() in a callback it will return.
 
 
-    float current_speed = 0;
+    float current_vtan = 0;
     float current_sigma = 0;
 
     // Behaviour variables
@@ -88,18 +88,27 @@ int main(int argc, char* argv[]) {
         sigma_desired = sigma_command;
 
         // Acceleration control
-        if(current_speed < vtan_desired-0.05) {
-            current_speed += acceleration * 0.1;
+        if(current_vtan < vtan_desired-0.05) {
+            current_vtan += acceleration * 0.1;
         }
 
-        if(current_speed > vtan_desired+0.05) {
-            current_speed -= acceleration * 0.1;
+        if(current_vtan > vtan_desired+0.05) {
+            current_vtan -= acceleration * 0.1;
         }
 
-        // Angle control
-        double dynamixel_desired[6];
-        steering_angle(current_sigma, dynamixel_desired);
+        // Final commands computation
+        double dynamixel_angle[4];
+        double wheels_w[6];
+        steering_angle(current_sigma, dynamixel_angle);
+        wheels_speed(current_sigma, current_vtan, wheels_w);
 
+
+        // Publish wheel and Dynamixel commands
+        std::string msg = wheels_w[0] + " " + wheels_w[1] + " " + wheels_w[2] + " " + wheels_w[3] + " " + wheels_w[4] + " " + wheels_w[5];
+        mosquitto_publish(mqtt_client, 0, "mobility/motorsspeed", msg.length(), msg.c_str(), 0, 0);
+
+        msg = dynamixel_angle[0] + " " + dynamixel_angle[1] + " " + dynamixel_angle[2] + " " + dynamixel_angle[3];
+        mosquitto_publish(mqtt_client, 0, "mobility/dynamixel", msg.length(), msg.c_str(), 0, 0);
 
 
         usleep(100000);
