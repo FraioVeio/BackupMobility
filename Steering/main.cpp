@@ -62,12 +62,11 @@ void wheels_speed(double _vtan, double _sigma, double *_w) {
         const double wdist = 60; // distanza ruote stesso lato
 
         double r; // steering radius
+
+        double theta = 0.017453292519943295 * _sigma;
+
         //curvature radius computation
-        if (_sigma == 0.0) {
-          r = 5.0E+8; //set to Inf
-        } else {
-          r = 250.0 / sin(_sigma); //250 is a geometry driven parameter
-        }
+        r = sqrt(wdist*wdist/(sin(theta)*sin(theta)) - wdist*wdist) * (tan(theta) > 0 ? 1 : -1);
 
         // Wheel radius
         double radius[6];
@@ -81,7 +80,7 @@ void wheels_speed(double _vtan, double _sigma, double *_w) {
 
         // Wheels speed
         for(int i=0;i<6;i++) {
-            _w[i] = _vtan * radius[i] / radiusvtan; // TODO questo non funge!
+            _w[i] = _vtan * radius[i] / radiusvtan;
         }
     } else {
         for(int i=0;i<6;i++) {
@@ -197,7 +196,7 @@ int main(int argc, char* argv[]) {
         double dynamixel_angle[4];
         double wheels_w[6];
         steering_angle(current_sigma, dynamixel_angle);
-        wheels_speed(current_sigma, current_vtan, wheels_w);
+        wheels_speed(current_vtan, current_sigma, wheels_w);
 
 
         // Publish wheel and Dynamixel commands
