@@ -124,10 +124,10 @@ int main(int argc, char* argv[]) {
         // Behaviour control
         bool defaultbehaviour = true;
         if(sigma_command != sigma_command_old) {    // Se c'è stato un cambio di angolo
-            if(sigma_command < 45-2) {
+            if(sigma_command < 45+2) {
                 critico = false;
             }
-            if(sigma_command > 45+2) {
+            if(sigma_command > 45-2) {
                 critico = true;
             }
 
