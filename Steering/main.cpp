@@ -21,8 +21,25 @@ void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
     cout << message->topic << " -> " << (char*) message->payload << std::endl;
 
     char *msg = (char*) message->payload;
-    sscanf(msg, "%f %f", &vtan_command, &sigma_command);
+    float vt, sg;
+    sscanf(msg, "%f %f", &vt, &sg);
 
+
+    if(vt < 0)
+        vt = -vt;
+
+    if(sg < -90) {
+        sg = -180 - sg;
+        vt = -vt;
+    }
+
+    if(sg > 90) {
+        sg = 180 - sg;
+        vt = -vt;
+    }
+
+    vtan_command = vt;
+    sigma_command = sg;
     return;
 }
 
@@ -72,10 +89,10 @@ void wheels_speed(double _vtan, double _sigma, double *_w) {
         double radius[6];
         radius[2] = r + wcent/2;
         radius[3] = r - wcent/2;
-        radius[0] = sqrt((r+wext/2)*(r+wext/2) + wdist*wdist);
-        radius[1] = sqrt((r-wext/2)*(r-wext/2) + wdist*wdist);
-        radius[4] = sqrt((r+wext/2)*(r+wext/2) + wdist*wdist);
-        radius[5] = sqrt((r-wext/2)*(r-wext/2) + wdist*wdist);
+        radius[0] = sqrt((r+wext/2)*(r+wext/2) + wdist*wdist) * (tan(theta) > 0 ? 1 : -1);
+        radius[1] = sqrt((r-wext/2)*(r-wext/2) + wdist*wdist) * (tan(theta) > 0 ? 1 : -1);
+        radius[4] = sqrt((r+wext/2)*(r+wext/2) + wdist*wdist) * (tan(theta) > 0 ? 1 : -1);
+        radius[5] = sqrt((r-wext/2)*(r-wext/2) + wdist*wdist) * (tan(theta) > 0 ? 1 : -1);
         double radiusvtan = sqrt(r*r + wdist*wdist);
 
         // Wheels speed
