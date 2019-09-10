@@ -13,8 +13,7 @@ compile:
 	make
 
 run:
-	@echo "\n\033[1;32m█ Running...\033[0m\n\n" &&\
-	./build/WheelController/WheelController
+	@echo "\n\033[1;32m█ Running...\033[0m\n\n"
 
 runwheel:
 	@echo "\n\033[1;32m█ Running...\033[0m\n\n" &&\
