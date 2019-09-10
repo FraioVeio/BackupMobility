@@ -18,7 +18,7 @@ float vtan_command = 0, sigma_command = 0;
 float vtan_desired = 0, sigma_desired = 0;
 
 void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message) {
-    cout << message->topic << " -> " << (char*) message->payload << std::endl;
+    //cout << message->topic << " -> " << (char*) message->payload << std::endl;
 
     char *msg = (char*) message->payload;
     float vt, sg;
@@ -34,6 +34,12 @@ void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
         sg += 360;
     }
 
+
+    // Riduzione velocità angoli > 25
+    if(sg > 25 || sg < -25)
+        vt /= 10;
+
+    // vt e sg correction
     if(vt < 0)
         vt = -vt;
 
