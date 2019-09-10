@@ -10,20 +10,45 @@
 #include <math.h>
 
 #define ACCELERATION_TOLL 0.1
+#define ACCELERATION 75
 
 using namespace std;
 
 float vtan_command = 0, sigma_command = 0;
 float vtan_desired = 0, sigma_desired = 0;
 
-float acceleration = 1;
-
 void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message) {
     cout << message->topic << " -> " << (char*) message->payload << std::endl;
 
     char *msg = (char*) message->payload;
-    sscanf(msg, "%f %f", &vtan_command, &sigma_command);
+    float vt, sg;
+    sscanf(msg, "%f %f", &vt, &sg);
+    vt *= 1000;
 
+
+    // Gestione angoli grossi
+    while(sg > 180) {
+        sg -= 360;
+    }
+    while(sg < -180) {
+        sg += 360;
+    }
+
+    if(vt < 0)
+        vt = -vt;
+
+    if(sg < -90) {
+        sg = -180 - sg;
+        vt = -vt;
+    }
+
+    if(sg > 90) {
+        sg = 180 - sg;
+        vt = -vt;
+    }
+
+    vtan_command = vt;
+    sigma_command = sg;
     return;
 }
 
@@ -57,31 +82,36 @@ void steering_angle(double _sigma, double *alpha_deg){
 }
 
 void wheels_speed(double _vtan, double _sigma, double *_w) {
-    const double wcent = 70; // distanza coppia ruote centrali
-    const double wext = 50; // distanza coppia ruote davanti e dietro
-    const double wdist = 60; // distanza ruote stesso lato
+    if(_sigma != 0) {
+        const double wcent = 70; // distanza coppia ruote centrali
+        const double wext = 50; // distanza coppia ruote davanti e dietro
+        const double wdist = 60; // distanza ruote stesso lato
 
-    double r; // steering radius
-    //curvature radius computation
-    if (_sigma == 0.0) {
-      r = 5.0E+8; //set to Inf
+        double r; // steering radius
+
+        double theta = 0.017453292519943295 * _sigma;
+
+        //curvature radius computation
+        r = sqrt(wdist*wdist/(sin(theta)*sin(theta)) - wdist*wdist) * (tan(theta) > 0 ? 1 : -1);
+
+        // Wheel radius
+        double radius[6];
+        radius[2] = r + wcent/2 * (tan(theta) > 0 ? 1 : -1);
+        radius[3] = r - wcent/2 * (tan(theta) > 0 ? 1 : -1);
+        radius[0] = sqrt((r+wext/2)*(r+wext/2) + wdist*wdist) * (tan(theta) > 0 ? 1 : -1);
+        radius[1] = sqrt((r-wext/2)*(r-wext/2) + wdist*wdist) * (tan(theta) > 0 ? 1 : -1);
+        radius[4] = sqrt((r+wext/2)*(r+wext/2) + wdist*wdist) * (tan(theta) > 0 ? 1 : -1);
+        radius[5] = sqrt((r-wext/2)*(r-wext/2) + wdist*wdist) * (tan(theta) > 0 ? 1 : -1);
+        double radiusvtan = sqrt(r*r + wdist*wdist);
+
+        // Wheels speed
+        for(int i=0;i<6;i++) {
+            _w[i] = _vtan * radius[i] / radiusvtan * (tan(theta) > 0 ? 1 : -1);
+        }
     } else {
-      r = 250.0 / sin(_sigma); //250 is a geometry driven parameter
-    }
-
-    // Wheel radius
-    double radius[6];
-    radius[2] = r + wcent/2;
-    radius[3] = r - wcent/2;
-    radius[0] = sqrt((r+wext/2)*(r+wext/2) + wdist*wdist);
-    radius[1] = sqrt((r-wext/2)*(r-wext/2) + wdist*wdist);
-    radius[4] = sqrt((r+wext/2)*(r+wext/2) + wdist*wdist);
-    radius[5] = sqrt((r-wext/2)*(r-wext/2) + wdist*wdist);
-    double radiusvtan = sqrt(r*r + wdist*wdist);
-
-    // Wheels speed
-    for(int i=0;i<6;i++) {
-        _w[i] = _vtan * radius[i] / radiusvtan;
+        for(int i=0;i<6;i++) {
+            _w[i] = _vtan;
+        }
     }
 }
 
@@ -90,7 +120,7 @@ int main(int argc, char* argv[]) {
     bool running = true;
     void* pacchetto;
     struct mosquitto* mqtt_client = NULL;
-    char mosquitto_broker_address[] = "10.0.0.10";
+    char mosquitto_broker_address[] = "127.0.0.1";
     int mosquitto_broker_port = 1883;
     int mosquitto_timeout_sleep = 60;
 
@@ -109,8 +139,6 @@ int main(int argc, char* argv[]) {
     // Behaviour variables
     float vtan_command_old = 0;
     float sigma_command_old = 0;
-    bool critico = false;
-    bool critico_old = false;
     int stopandgostatus = 0;
     int stopandgocyclecount = 0;
 
@@ -120,14 +148,10 @@ int main(int argc, char* argv[]) {
         // Behaviour control
         bool defaultbehaviour = true;
         if(sigma_command != sigma_command_old) {    // Se c'è stato un cambio di angolo
-            if(sigma_command < 45-5) {
-                critico = false;
-            }
-            if(sigma_command > 45+5) {
-                critico = true;
-            }
+            if(sigma_command == 45)
+                sigma_command = 44.9;
 
-            if(critico != critico_old) {
+            if((sigma_command_old < 45 && sigma_command > 45) || (sigma_command_old > 45 && sigma_command < 45)) {
                 // IMPOSTA LA FLAG CHE FA QUESTO:
 
                 // Velocità a zero e angolo lascia costante
@@ -148,7 +172,7 @@ int main(int argc, char* argv[]) {
                 }
             }
 
-            if(stopandgostatus = 2) {   // DOPO essersi fermati allora cambia l'angolo a quello desiderato e aspetta
+            if(stopandgostatus == 2) {   // DOPO essersi fermati allora cambia l'angolo a quello desiderato e aspetta
                 sigma_desired = sigma_command;
 
                 if(stopandgocyclecount >= 4 * 10) { // aspetta 4 secondi
@@ -158,7 +182,7 @@ int main(int argc, char* argv[]) {
                 stopandgocyclecount ++;
             }
 
-            if(stopandgostatus = 3) {   // Velocità a Velocità desiderata
+            if(stopandgostatus == 3) {   // Velocità a Velocità desiderata
                 vtan_desired = vtan_command;
                 stopandgostatus = 0;    // esci da stopandgo
             }
@@ -169,26 +193,29 @@ int main(int argc, char* argv[]) {
             sigma_desired = sigma_command;
         }
 
-        /***********************/
-
         vtan_command_old = vtan_command;
         sigma_command_old = sigma_command;
-        critico_old = critico;
+
+        /***********************/
+
+        // cout << current_vtan << " " << current_sigma << endl;
 
         // Acceleration control
         if(current_vtan < vtan_desired-ACCELERATION_TOLL) {
-            current_vtan += acceleration * 0.1;
+            current_vtan += ACCELERATION * 0.1;
         }
 
         if(current_vtan > vtan_desired+ACCELERATION_TOLL) {
-            current_vtan -= acceleration * 0.1;
+            current_vtan -= ACCELERATION * 0.1;
         }
+
+        current_sigma = sigma_desired;
 
         // Final commands computation
         double dynamixel_angle[4];
         double wheels_w[6];
         steering_angle(current_sigma, dynamixel_angle);
-        wheels_speed(current_sigma, current_vtan, wheels_w);
+        wheels_speed(current_vtan, current_sigma, wheels_w);
 
 
         // Publish wheel and Dynamixel commands

@@ -70,7 +70,7 @@ int main(int argc,char* argv[]) {
     bool running = true;
     void* pacchetto;
     struct mosquitto* mqtt_client = NULL;
-    char mosquitto_broker_address[] = "10.0.0.10";
+    char mosquitto_broker_address[] = "127.0.0.1";
     int mosquitto_broker_port = 1883;
     int mosquitto_timeout_sleep = 60;
 
