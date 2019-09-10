@@ -10,7 +10,7 @@
 #include <math.h>
 
 #define ACCELERATION_TOLL 0.1
-#define ACCELERATION 50
+#define ACCELERATION 75
 
 using namespace std;
 
@@ -23,7 +23,16 @@ void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
     char *msg = (char*) message->payload;
     float vt, sg;
     sscanf(msg, "%f %f", &vt, &sg);
+    vt *= 1000;
 
+
+    // Gestione angoli grossi
+    while(sg > 180) {
+        sg -= 360;
+    }
+    while(sg < -180) {
+        sg += 360;
+    }
 
     if(vt < 0)
         vt = -vt;
@@ -87,8 +96,8 @@ void wheels_speed(double _vtan, double _sigma, double *_w) {
 
         // Wheel radius
         double radius[6];
-        radius[2] = r + wcent/2;
-        radius[3] = r - wcent/2;
+        radius[2] = r + wcent/2 * (tan(theta) > 0 ? 1 : -1);
+        radius[3] = r - wcent/2 * (tan(theta) > 0 ? 1 : -1);
         radius[0] = sqrt((r+wext/2)*(r+wext/2) + wdist*wdist) * (tan(theta) > 0 ? 1 : -1);
         radius[1] = sqrt((r-wext/2)*(r-wext/2) + wdist*wdist) * (tan(theta) > 0 ? 1 : -1);
         radius[4] = sqrt((r+wext/2)*(r+wext/2) + wdist*wdist) * (tan(theta) > 0 ? 1 : -1);
@@ -97,7 +106,7 @@ void wheels_speed(double _vtan, double _sigma, double *_w) {
 
         // Wheels speed
         for(int i=0;i<6;i++) {
-            _w[i] = _vtan * radius[i] / radiusvtan;
+            _w[i] = _vtan * radius[i] / radiusvtan * (tan(theta) > 0 ? 1 : -1);
         }
     } else {
         for(int i=0;i<6;i++) {
