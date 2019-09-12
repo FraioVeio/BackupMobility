@@ -9,7 +9,8 @@
 #include <mutex>
 #include <math.h>
 
-#define ACCELERATION 30
+#define ACCELERATION 75
+#define WHEEL_SPEED_MULTIPLIER 16.6
 
 using namespace std;
 
@@ -30,10 +31,11 @@ void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
     float vtn;
     sscanf(msg, "%f %f %f %f %f %f %f", &desired[0], &desired[1], &desired[2], &desired[3], &desired[4], &desired[5], &vtn);
 
-    cycles = abs((vtn-vtan)/(ACCELERATION*0.1));
+    cycles = abs((vtn-vtan)*WHEEL_SPEED_MULTIPLIER/(ACCELERATION*0.1));
     vtan = vtn;
 
     for(int i=0;i<6;i++) {
+        desired[i] *= WHEEL_SPEED_MULTIPLIER;
         increment[i] = (desired[i] - w[i]) / cycles;
     }
     count = 0;
