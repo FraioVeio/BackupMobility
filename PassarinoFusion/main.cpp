@@ -9,22 +9,42 @@
 #include <mutex>
 #include <math.h>
 
-#define ACCELERATION_TOLL 0.1
-#define ACCELERATION 75
+#define ACCELERATION 30
 
 using namespace std;
+
+float desired[6] = {0, 0, 0, 0, 0, 0};
+float vtan = 0;
+float w[6] = {0, 0, 0, 0, 0, 0};
+float increment[6] = {0, 0, 0, 0, 0, 0};
+int cycles = 0;
+int count = 0;
+
+mutex input_mutex;
 
 void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message) {
     //cout << message->topic << " -> " << (char*) message->payload << std::endl;
 
+    input_mutex.lock();
     char *msg = (char*) message->payload;
-    float vt, sg;
+    float vtn;
+    sscanf(msg, "%f %f %f %f %f %f %f", &desired[0], &desired[1], &desired[2], &desired[3], &desired[4], &desired[5], &vtn);
+
+    cycles = abs((vtn-vtan)/(ACCELERATION*0.1));
+    vtan = vtn;
+
+    for(int i=0;i<6;i++) {
+        increment[i] = (desired[i] - w[i]) / cycles;
+    }
+    count = 0;
+    input_mutex.unlock();
+
     return;
 }
 
 
 void on_connect_callback(struct mosquitto *mosq, void *userdata, int rc) {
-    char topic1[] = "mobility/move";
+    char topic1[] = "mobility/motorsdesiredspeed";
     mosquitto_subscribe(mosq, NULL, topic1, 1);
     return;
 }
@@ -49,10 +69,22 @@ int main(int argc, char* argv[]) {
 
     while(1) {
 
+        input_mutex.lock();
+        if(count < cycles) {
+            for(int i=0;i<6;i++) {
+                w[i] += increment[i];
+            }
 
+            count ++;
+        } else {
+            for(int i=0;i<6;i++) {
+                w[i] = desired[i];
+            }
+        }
+        input_mutex.unlock();
 
         // Publish wheel and Dynamixel commands
-        std::string msg = to_string(0) + " " + to_string(0) + " " + to_string(0) + " " + to_string(0) + " " + to_string(0) + " " + to_string(0);
+        std::string msg = to_string(w[0]) + " " + to_string(w[1]) + " " + to_string(w[2]) + " " + to_string(w[3]) + " " + to_string(w[4]) + " " + to_string(w[5]);
         mosquitto_publish(mqtt_client, 0, "mobility/motorsspeed", msg.length(), msg.c_str(), 0, 0);
 
 
