@@ -11,6 +11,7 @@
 
 #define ACCELERATION 75
 #define WHEEL_SPEED_MULTIPLIER 16.6
+#define ACCELERATION_CYCLES 15
 
 using namespace std;
 
@@ -29,9 +30,10 @@ void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
     input_mutex.lock();
     char *msg = (char*) message->payload;
     float vtn;
-    sscanf(msg, "%f %f %f %f %f %f %f", &desired[0], &desired[1], &desired[2], &desired[3], &desired[4], &desired[5], &vtn);
+    //sscanf(msg, "%f %f %f %f %f %f %f", &desired[0], &desired[1], &desired[2], &desired[3], &desired[4], &desired[5], &vtn);
+    sscanf(msg, "%f %f %f %f %f %f", &desired[0], &desired[1], &desired[2], &desired[3], &desired[4], &desired[5]);
 
-    cycles = abs((vtn-vtan)*WHEEL_SPEED_MULTIPLIER/(ACCELERATION*0.1));
+    cycles = ACCELERATION_CYCLES; //abs((vtn-vtan)*WHEEL_SPEED_MULTIPLIER/(ACCELERATION*0.1));
     vtan = vtn;
 
     for(int i=0;i<6;i++) {
