@@ -167,7 +167,8 @@ int main(int argc, char* argv[]) {
             if(sigma_command == 45)
                 sigma_command = 44.9;
 
-            if((sigma_command_old < 45 && sigma_command > 45) || (sigma_command_old > 45 && sigma_command < 45)) {
+            if((sigma_command_old < 45 && sigma_command > 45) || (sigma_command_old > 45 && sigma_command < 45)
+                || (sigma_command_old < -45 && sigma_command > -45) || (sigma_command_old > -45 && sigma_command < -45)) {
                 // IMPOSTA LA FLAG CHE FA QUESTO:
 
                 // Velocità a zero e angolo lascia costante
