@@ -19,3 +19,7 @@ wheel:
 steering:
 	@echo "\n\033[1;32m█ Running...\033[0m\n\n" &&\
 	./build/Steering/Steering
+
+passarinofusion:
+	@echo "\n\033[1;32m█ Running...\033[0m\n\n" &&\
+	./build/PassarinoFusion/PassarinoFusion
