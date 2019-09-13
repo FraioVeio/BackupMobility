@@ -1,0 +1,18 @@
+[Unit]
+Description=Autonomous Navigation
+After=network.target
+After=systemd-user-sessions.service
+After=network-online.target
+
+[Service]
+Type=simple
+User=jetson
+WorkingDirectory=/home/jetson/TRINITY-Rover/BackupMobility
+ExecStart=/bin/bash /home/jetson/TRINITY-Rover/BackupMobility/start-wheel.sh
+ExecStop=/bin/bash /home/jetson/TRINITY-Rover/BackupMobility/stop-wheel.sh
+#Restart=always
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
