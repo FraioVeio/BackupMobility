@@ -11,7 +11,7 @@
 
 #define ACCELERATION 75
 #define WHEEL_SPEED_MULTIPLIER 16.6
-#define ACCELERATION_CYCLES 15
+#define ACCELERATION_CYCLES 10
 
 using namespace std;
 
@@ -31,16 +31,20 @@ void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
     char *msg = (char*) message->payload;
     float vtn;
     //sscanf(msg, "%f %f %f %f %f %f %f", &desired[0], &desired[1], &desired[2], &desired[3], &desired[4], &desired[5], &vtn);
-    sscanf(msg, "%f %f %f %f %f %f", &desired[0], &desired[1], &desired[2], &desired[3], &desired[4], &desired[5]);
+    float des[6] = {0, 0, 0, 0, 0, 0};
+    sscanf(msg, "%f %f %f %f %f %f", &des[0], &des[1], &des[2], &des[3], &des[4], &des[5]);
 
-    cycles = ACCELERATION_CYCLES; //abs((vtn-vtan)*WHEEL_SPEED_MULTIPLIER/(ACCELERATION*0.1));
-    vtan = vtn;
+    if(des[0] != desired[0] || des[1] != desired[1] || des[2] != desired[2] || des[3] != desired[3] || des[4] != desired[4] || des[5] != desired[5]) {
+        cycles = ACCELERATION_CYCLES; //abs((vtn-vtan)*WHEEL_SPEED_MULTIPLIER/(ACCELERATION*0.1));
+        vtan = vtn;
 
-    for(int i=0;i<6;i++) {
-        desired[i] *= WHEEL_SPEED_MULTIPLIER;
-        increment[i] = (desired[i] - w[i]) / cycles;
+        for(int i=0;i<6;i++) {
+            desired[i] = des[i] * WHEEL_SPEED_MULTIPLIER;
+            increment[i] = (desired[i] - w[i]) / cycles;
+        }
+        count = 0;
     }
-    count = 0;
+    
     input_mutex.unlock();
 
     return;
@@ -58,7 +62,7 @@ int main(int argc, char* argv[]) {
     bool running = true;
     void* pacchetto;
     struct mosquitto* mqtt_client = NULL;
-    char mosquitto_broker_address[] = "127.0.0.1";
+    char mosquitto_broker_address[] = "10.0.0.10";
     int mosquitto_broker_port = 1883;
     int mosquitto_timeout_sleep = 60;
 
