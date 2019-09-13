@@ -18,7 +18,7 @@ float vtan_command = 0, sigma_command = 0;
 float vtan_desired = 0, sigma_desired = 0;
 
 void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message) {
-    cout << message->topic << " -> " << (char*) message->payload << std::endl;
+    //cout << message->topic << " -> " << (char*) message->payload << std::endl;
 
     char *msg = (char*) message->payload;
     float vt, sg;
@@ -34,6 +34,7 @@ void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
         sg += 360;
     }
 
+    // vt e sg correction
     if(vt < 0)
         vt = -vt;
 
@@ -46,6 +47,10 @@ void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
         sg = 180 - sg;
         vt = -vt;
     }
+
+    // Riduzione velocità angoli > 25
+    if(sg > 25 || sg < -25)
+        vt /= 10;
 
     vtan_command = vt;
     sigma_command = sg;
@@ -96,8 +101,8 @@ void wheels_speed(double _vtan, double _sigma, double *_w) {
 
         // Wheel radius
         double radius[6];
-        radius[2] = r + wcent/2 * (tan(theta) > 0 ? 1 : -1);
-        radius[3] = r - wcent/2 * (tan(theta) > 0 ? 1 : -1);
+        radius[2] = r + wcent/2;
+        radius[3] = r - wcent/2;
         radius[0] = sqrt((r+wext/2)*(r+wext/2) + wdist*wdist) * (tan(theta) > 0 ? 1 : -1);
         radius[1] = sqrt((r-wext/2)*(r-wext/2) + wdist*wdist) * (tan(theta) > 0 ? 1 : -1);
         radius[4] = sqrt((r+wext/2)*(r+wext/2) + wdist*wdist) * (tan(theta) > 0 ? 1 : -1);
@@ -108,6 +113,17 @@ void wheels_speed(double _vtan, double _sigma, double *_w) {
         for(int i=0;i<6;i++) {
             _w[i] = _vtan * radius[i] / radiusvtan * (tan(theta) > 0 ? 1 : -1);
         }
+
+        // Singolarità ruote anti 180
+        if(_sigma > 45) {
+            _w[1] *= -1;
+            _w[5] *= -1;
+        }
+        if(_sigma < -45) {
+            _w[0] *= -1;
+            _w[4] *= -1;
+        }
+
     } else {
         for(int i=0;i<6;i++) {
             _w[i] = _vtan;
@@ -151,7 +167,8 @@ int main(int argc, char* argv[]) {
             if(sigma_command == 45)
                 sigma_command = 44.9;
 
-            if((sigma_command_old < 45 && sigma_command > 45) || (sigma_command_old > 45 && sigma_command < 45)) {
+            if((sigma_command_old < 45 && sigma_command > 45) || (sigma_command_old > 45 && sigma_command < 45)
+                || (sigma_command_old < -45 && sigma_command > -45) || (sigma_command_old > -45 && sigma_command < -45)) {
                 // IMPOSTA LA FLAG CHE FA QUESTO:
 
                 // Velocità a zero e angolo lascia costante

@@ -3,3 +3,4 @@ project(OperationsRecorder)
 
 add_subdirectory(WheelController)
 add_subdirectory(Steering)
+add_subdirectory(PassarinoFusion)
