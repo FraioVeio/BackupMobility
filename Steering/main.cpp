@@ -135,7 +135,7 @@ int main(int argc, char* argv[]) {
     bool running = true;
     void* pacchetto;
     struct mosquitto* mqtt_client = NULL;
-    char mosquitto_broker_address[] = "10.0.0.20";
+    char mosquitto_broker_address[] = "127.0.0.1";
     int mosquitto_broker_port = 1883;
     int mosquitto_timeout_sleep = 60;
 
@@ -231,7 +231,7 @@ int main(int argc, char* argv[]) {
         double dynamixel_angle[4];
         double wheels_w[6];
         steering_angle(current_sigma, dynamixel_angle);
-        wheels_speed(current_vtan, current_sigma, wheels_w);
+        wheels_speed(vtan_desired, current_sigma, wheels_w);
 
 
         // Publish wheel and Dynamixel commands
