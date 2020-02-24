@@ -49,7 +49,7 @@ void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
 
     // Riduzione velocità angoli > 25
     if(sg > 25 || sg < -25)
-        vt /= 10;
+        vt /= 2;
 
     vtan_command = vt;
     sigma_command = sg;
