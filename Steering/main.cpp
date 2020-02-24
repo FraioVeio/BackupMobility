@@ -9,8 +9,8 @@
 #include <mutex>
 #include <math.h>
 
-#define ACCELERATION_TOLL 0.1
-#define ACCELERATION 75
+#define ACCELERATION_TOLL 0.01
+#define ACCELERATION 0.1
 
 using namespace std;
 
@@ -23,7 +23,6 @@ void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
     char *msg = (char*) message->payload;
     float vt, sg;
     sscanf(msg, "%f %f", &vt, &sg);
-    vt *= 1000;
 
 
     // Gestione angoli grossi
@@ -136,7 +135,7 @@ int main(int argc, char* argv[]) {
     bool running = true;
     void* pacchetto;
     struct mosquitto* mqtt_client = NULL;
-    char mosquitto_broker_address[] = "127.0.0.1";
+    char mosquitto_broker_address[] = "10.0.0.20";
     int mosquitto_broker_port = 1883;
     int mosquitto_timeout_sleep = 60;
 
@@ -237,7 +236,8 @@ int main(int argc, char* argv[]) {
 
         // Publish wheel and Dynamixel commands
         std::string msg = to_string(wheels_w[0]) + " " + to_string(wheels_w[1]) + " " + to_string(wheels_w[2]) + " " + to_string(wheels_w[3]) + " " + to_string(wheels_w[4]) + " " + to_string(wheels_w[5]);
-        mosquitto_publish(mqtt_client, 0, "mobility/motorsspeed", msg.length(), msg.c_str(), 0, 0);
+        mosquitto_publish(mqtt_client, 0, "mobility/VESC/wrad", msg.length(), msg.c_str(), 0, 0);
+        std::cout << msg << std::endl;
 
         msg = to_string(dynamixel_angle[0]) + " " + to_string(dynamixel_angle[1]) + " " + to_string(dynamixel_angle[2]) + " " + to_string(dynamixel_angle[3]);
         mosquitto_publish(mqtt_client, 0, "mobility/dynamixel", msg.length(), msg.c_str(), 0, 0);
